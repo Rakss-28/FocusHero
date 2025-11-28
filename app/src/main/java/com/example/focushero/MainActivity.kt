@@ -48,10 +48,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.focushero.data.Mood
 import com.example.focushero.data.SessionRepository
 import com.example.focushero.ui.theme.FocusHeroTheme
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,6 +65,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Initialize AdMob
+        MobileAds.initialize(this) {}
+        
         setContent {
             FocusHeroTheme {
                 FocusHeroApp()
@@ -93,23 +102,44 @@ fun FocusHeroApp() {
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             val modifier = Modifier.padding(innerPadding)
-            when (viewModel.currentDestination) {
-                AppDestinations.HOME -> HomeScreen(
-                    modifier = modifier,
-                    viewModel = viewModel
-                )
-                AppDestinations.STATS -> StatsScreen(
-                    modifier = modifier,
-                    repository = repository
-                )
-                AppDestinations.PROFILE -> ProfileScreen(
-                    modifier = modifier,
-                    points = viewModel.points,
-                    streak = viewModel.streak
-                )
+            Column(modifier = modifier.fillMaxSize()) {
+                // Content Area
+                Column(modifier = Modifier.weight(1f)) {
+                    when (viewModel.currentDestination) {
+                        AppDestinations.HOME -> HomeScreen(
+                            viewModel = viewModel
+                        )
+                        AppDestinations.STATS -> StatsScreen(
+                            repository = repository
+                        )
+                        AppDestinations.PROFILE -> ProfileScreen(
+                            points = viewModel.points,
+                            streak = viewModel.streak
+                        )
+                    }
+                }
+                
+                // Banner Ad at the bottom
+                BannerAd(modifier = Modifier.fillMaxWidth())
             }
         }
     }
+}
+
+@Composable
+fun BannerAd(modifier: Modifier = Modifier) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            AdView(context).apply {
+                setAdSize(AdSize.BANNER)
+                // Use Test Ad Unit ID for development. 
+                // Replace with your real Ad Unit ID from AdMob dashboard before release.
+                adUnitId = "ca-app-pub-3940256099942544/6300978111" 
+                loadAd(AdRequest.Builder().build())
+            }
+        }
+    )
 }
 
 enum class AppDestinations(
